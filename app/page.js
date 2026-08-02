@@ -764,6 +764,71 @@ export default function AdminPage() {
   "isi": "Halo, ini pesan dari API!"
 }`}
                 </pre>
+                
+                <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Contoh Penggunaan dengan cURL:</p>
+                <pre style={{ backgroundColor: '#1e293b', color: '#60a5fa', padding: '12px', borderRadius: '4px', marginBottom: '16px', overflowX: 'auto' }}>
+{`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/send \\
+-H "Content-Type: application/json" \\
+-d '{
+  "username": "USERNAME_MILIK_USER",
+  "token": "TOKEN_MILIK_USER",
+  "secret": "SECRET_MILIK_USER",
+  "no_hp": "6281234567890",
+  "isi": "Halo, ini pesan dari API!"
+}'`}
+                </pre>
+
+                <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Contoh Penggunaan dengan PHP:</p>
+                <pre style={{ backgroundColor: '#1e293b', color: '#a78bfa', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}>
+{`<?php
+$curl = curl_init();
+
+$payload = json_encode(array(
+  "username" => "USERNAME_MILIK_USER",
+  "token" => "TOKEN_MILIK_USER",
+  "secret" => "SECRET_MILIK_USER",
+  "no_hp" => "6281234567890",
+  "isi" => "Halo, ini pesan percobaan dari API!"
+));
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => '${typeof window !== 'undefined' ? window.location.origin : ''}/api/send',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_POST => true,
+  CURLOPT_POSTFIELDS => $payload,
+  CURLOPT_HTTPHEADER => array(
+    'Content-Type: application/json'
+  ),
+));
+
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+?>`}
+                </pre>
+
+                <h3 style={{ marginTop: '24px', marginBottom: '16px', fontSize: '18px' }}>Contoh Respons</h3>
+                
+                <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>Jika Sukses (HTTP 200)</h4>
+                <pre style={{ backgroundColor: '#1e293b', color: '#86efac', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginBottom: '16px' }}>
+{`{
+  "message": "Message queued successfully",
+  "scheduled_for": "2024-05-20T10:30:00.000Z",
+  "data": {
+    "id": 1234,
+    "target": "6281234567890",
+    "status": "PENDING"
+  }
+}`}
+                </pre>
+                
+                <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>Jika Gagal (HTTP 401 / 403)</h4>
+                <pre style={{ backgroundColor: '#1e293b', color: '#fca5a5', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginBottom: '16px' }}>
+{`{
+  "error": "Kombinasi username, token, dan secret salah" 
+  // Atau "Akun user dinonaktifkan"
+}`}
+                </pre>
               </div>
             </div>
           )}
