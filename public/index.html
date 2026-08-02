@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Sender Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; cursor: pointer; }
+        button:hover { background: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <h1>WhatsApp Sender Admin Panel</h1>
+
+    <div class="card">
+        <h3>Register New Client</h3>
+        <p>Gunakan form ini untuk mendaftarkan pelanggan (client) baru yang akan memakai API.</p>
+        <input type="text" id="clientName" placeholder="Nama Client (misal: Sekolah 1)">
+        <input type="text" id="clientToken" placeholder="Token (API key for client)">
+        <input type="text" id="clientSecret" placeholder="Secret (API Secret for client)">
+        <button onclick="registerClient()">Daftarkan Client</button>
+    </div>
+
+    <div class="card">
+        <h3>Registered Clients</h3>
+        <button onclick="loadClients()">Refresh List</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Token</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="clientsTable">
+                <!-- Clients will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="background: #f9f9f9;">
+        <h3>Cara Menggunakan API (Untuk Client)</h3>
+        <p>Kirimkan POST request ke <code>/api/send</code> dengan payload JSON berikut:</p>
+        <pre>
+{
+    "no_hp": "6281234567890",
+    "isi": "Pesan informasi dari sistem",
+    "token": "TOKEN_CLIENT",
+    "secret": "SECRET_CLIENT"
+}
+        </pre>
+        <p>Pesan akan masuk ke antrean database dan cron job akan memprosesnya dalam 0-5 menit ke depan dengan jeda acak (anti-spam).</p>
+    </div>
+
+    <script>
+        async function registerClient() {
+            const name = document.getElementById('clientName').value;
+            const token = document.getElementById('clientToken').value;
+            const secret = document.getElementById('clientSecret').value;
+
+            if(!name || !token || !secret) return alert('Semua field harus diisi!');
+
+            try {
+                const res = await fetch('/admin/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, token, secret })
+                });
+                const data = await res.json();
+                alert(data.message || data.error);
+                loadClients();
+            } catch (err) {
+                alert('Error mendaftarkan client');
+            }
+        }
+
+        async function loadClients() {
+            const tbody = document.getElementById('clientsTable');
+            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+            try {
+                const res = await fetch('/admin/clients');
+                const clients = await res.json();
+                
+                tbody.innerHTML = '';
+                clients.forEach(c => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${c.id}</td>
+                            <td>${c.name}</td>
+                            <td>${c.token}</td>
+                            <td><strong>${c.status}</strong></td>
+                            <td>
+                                <a href="/client/${c.id}/qr" target="_blank" style="padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px;">
+                                    View QR / Scan
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="5">Error loading clients</td></tr>';
+            }
+        }
+
+        // Load initially
+        loadClients();
+    </script>
+</body>
+</html>

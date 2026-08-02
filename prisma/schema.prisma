@@ -1,0 +1,41 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  name      String   @default("Admin")
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model User {
+  username  String    @id
+  name      String
+  password  String
+  token     String?   @unique
+  secret    String?
+  waStatus  String    @default("DISCONNECTED")
+  aktif     Int       @default(1)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  userUsername String
+  target_no    String
+  message      String
+  status       String   @default("PENDING") // PENDING, SENT, FAILED
+  send_at      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userUsername], references: [username], onDelete: Cascade)
+}
