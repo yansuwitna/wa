@@ -95,6 +95,10 @@ pm2 startup
 # (Jalankan perintah yang dihasilkan oleh pm2 startup tersebut di terminal Anda)
 
 pm2 save
+
+
+# Perintah Gabung 
+git pull && pm2 stop wa && rm -rf .next && npm run build && pm2 start wa
 ```
 
 ### 9\. Perintah PM2 yang Berguna

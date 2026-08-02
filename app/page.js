@@ -543,11 +543,11 @@ export default function AdminPage() {
 
               <div className="card" style={{ padding: '32px' }}>
                 <h2>Selamat Datang di WhatsApp Sender Admin!</h2>
-                <p style={{ color: '#475569', lineHeight: '1.6' }}>Sistem ini memantau pengiriman pesan massal API Anda. Untuk memulai:<br/>
-                  1. Masuk ke menu <strong>User</strong> dan tambahkan pelanggan baru.<br/>
-                  2. Cari User yang baru dibuat, klik <strong>Aktifkan WA</strong>.<br/>
-                  3. Klik <strong>Scan QR</strong> yang muncul agar bot WA dapat terhubung ke nomor tersebut.<br/>
-                  4. Lihat menu <strong>Panduan API</strong> untuk petunjuk integrasi.
+                <p style={{ color: '#475569', lineHeight: '1.6' }}>Sistem ini memantau pengiriman pesan massal API Anda. Panduan penggunaan:<br/>
+                  1. Masuk ke menu <strong>Manajemen User</strong> dan buat akun pelanggan baru.<br/>
+                  2. Berikan <strong>Username</strong> dan <strong>Password</strong> tersebut kepada pelanggan Anda.<br/>
+                  3. Pelanggan dapat <strong>Login</strong> menggunakan akun tersebut untuk memindai <strong>QR Code WA</strong> mereka sendiri di dashboard khusus User.<br/>
+                  4. Pelanggan akan mendapatkan <strong>Token</strong>, <strong>Secret</strong>, dan panduan API secara otomatis di dashboard mereka.
                 </p>
               </div>
             </div>
