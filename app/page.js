@@ -45,6 +45,7 @@ export default function AdminPage() {
   // UI state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [sysLogs, setSysLogs] = useState([]);
 
   const checkAuth = async () => {
     try {
@@ -152,6 +153,25 @@ export default function AdminPage() {
     }
     setLoadingClients(false);
   };
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch('/admin/logs');
+      if (res.ok) {
+        const data = await res.json();
+        setSysLogs(data.logs);
+      }
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    let interval;
+    if (authState === 'DASHBOARD') {
+      fetchLogs();
+      interval = setInterval(fetchLogs, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [authState]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -460,6 +480,7 @@ export default function AdminPage() {
       case 'DASHBOARD': return 'Ringkasan Dashboard';
       case 'USER': return 'Manajemen User & WA';
       case 'API': return 'Panduan Penggunaan API';
+      case 'LOGS': return 'Sistem Log';
       default: return '';
     }
   };
@@ -493,6 +514,13 @@ export default function AdminPage() {
             style={{ textAlign: 'left', padding: '12px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: currentTab === 'API' ? '#2563eb' : 'transparent', color: currentTab === 'API' ? '#fff' : '#cbd5e1', fontWeight: '500', transition: 'all 0.2s' }}
           >
             Panduan API
+          </button>
+
+          <button 
+            onClick={() => { setCurrentTab('LOGS'); fetchLogs(); setIsSidebarOpen(false); }} 
+            style={{ textAlign: 'left', padding: '12px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: currentTab === 'LOGS' ? '#2563eb' : 'transparent', color: currentTab === 'LOGS' ? '#fff' : '#cbd5e1', fontWeight: '500', transition: 'all 0.2s' }}
+          >
+            Log Sistem
           </button>
         </nav>
 
@@ -549,6 +577,22 @@ export default function AdminPage() {
                   3. Pelanggan dapat <strong>Login</strong> menggunakan akun tersebut untuk memindai <strong>QR Code WA</strong> mereka sendiri di dashboard khusus User.<br/>
                   4. Pelanggan akan mendapatkan <strong>Token</strong>, <strong>Secret</strong>, dan panduan API secara otomatis di dashboard mereka.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'LOGS' && (
+            <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '600px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ margin: 0 }}>Terminal Log Sistem</h2>
+                <button className="btn btn-primary" onClick={fetchLogs}>Refresh Log</button>
+              </div>
+              <div style={{ backgroundColor: '#0f172a', color: '#10b981', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px', flex: 1, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                {sysLogs.length === 0 ? 'Menunggu log...' : sysLogs.map((l, i) => (
+                  <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2px 0' }}>
+                    {l}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -708,15 +752,16 @@ export default function AdminPage() {
                 </code>
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Headers:</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', marginBottom: '16px', overflowX: 'auto' }}>
-{`Content-Type: application/json
-Authorization: Bearer <TOKEN>`}
+{`Content-Type: application/json`}
                 </pre>
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Body (JSON):</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}>
 {`{
-  "secret": "<SECRET_KEY>",
-  "target": "081234567890",
-  "message": "Halo, ini pesan dari API!"
+  "username": "USERNAME_MILIK_USER",
+  "token": "TOKEN_MILIK_USER",
+  "secret": "SECRET_MILIK_USER",
+  "no_hp": "6281234567890",
+  "isi": "Halo, ini pesan dari API!"
 }`}
                 </pre>
               </div>

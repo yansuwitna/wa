@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const svgCaptcha = require('svg-captcha');
 const { prisma } = require('./db');
 const { initializeSession, getQrCode, disconnectSession, getSession } = require('./whatsapp');
+const { getLogs } = require('./logger');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
@@ -354,6 +355,10 @@ router.get('/admin/stats', checkAuth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+router.get('/admin/logs', checkAuth, (req, res) => {
+  res.json({ logs: getLogs() });
 });
 
 // USERS
