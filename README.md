@@ -21,11 +21,11 @@ sudo npm install -g pm2
 
 ### 2. Pindahkan atau Clone Proyek ke VPS
 Anda bisa mengunggah folder proyek ini ke VPS menggunakan Git, FileZilla (SFTP), atau `scp`.
-Misalnya, letakkan proyek di folder `/var/www/wa-gateway`.
+Misalnya, letakkan proyek di folder `/var/www/wa`.
 
 Masuk ke dalam direktori proyek:
 ```bash
-cd /var/www/wa-gateway
+cd /var/www/wa
 ```
 
 ### 3. Instalasi Dependensi
@@ -65,13 +65,13 @@ npm run build
 ### 7. Jalankan Aplikasi dengan PM2
 Agar aplikasi dapat berjalan di latar belakang (dan otomatis menyala ulang jika server VPS direstart), gunakan perintah PM2 untuk menjalankan `server.js`:
 ```bash
-pm2 start server.js --name "wa-gateway"
+pm2 start server.js --name "wa"
 ```
 
 Jika sukses, aplikasi Anda akan berjalan di port `3000` (atau sesuai konfigurasi di `.env`).
 
 ### 8. Simpan Konfigurasi PM2
-Jalankan dua perintah berikut agar *wa-gateway* otomatis berjalan (Auto-Start) setiap kali VPS di-reboot:
+Jalankan dua perintah berikut agar *wa* otomatis berjalan (Auto-Start) setiap kali VPS di-reboot:
 ```bash
 pm2 startup
 # (Jalankan perintah yang dihasilkan oleh pm2 startup tersebut di terminal Anda)
@@ -82,16 +82,16 @@ pm2 save
 ### 9. Perintah PM2 yang Berguna
 Untuk mengelola aplikasi, Anda dapat menggunakan perintah berikut:
 - **Melihat status aplikasi:** `pm2 status`
-- **Melihat log (pesan error/cron job):** `pm2 logs wa-gateway`
-- **Merestart aplikasi:** `pm2 restart wa-gateway`
-- **Mematikan aplikasi:** `pm2 stop wa-gateway`
+- **Melihat log (pesan error/cron job):** `pm2 logs wa`
+- **Merestart aplikasi:** `pm2 restart wa`
+- **Mematikan aplikasi:** `pm2 stop wa`
 
 ---
 
 ## 🔒 Konfigurasi Tambahan: Nginx Reverse Proxy (Opsional tapi Direkomendasikan)
 Jika Anda memiliki domain (misal: `api.domainanda.com`), sangat disarankan memasang **Nginx** sebagai *reverse proxy* dan menggunakan SSL (Let's Encrypt). 
 
-Contoh konfigurasi Nginx (`/etc/nginx/sites-available/wa-gateway`):
+Contoh konfigurasi Nginx (`/etc/nginx/sites-available/wa`):
 ```nginx
 server {
     listen 80;
