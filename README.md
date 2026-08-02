@@ -81,7 +81,7 @@ npm run build
 Agar aplikasi dapat berjalan di latar belakang (dan otomatis menyala ulang jika server VPS direstart), gunakan perintah PM2 untuk menjalankan `server.js`:
 
 ```plaintext
-PORT= 3500 pm2 start server.js --name "wa"
+pm2 start server.js --name "wa"
 ```
 
 Jika sukses, aplikasi Anda akan berjalan di port `3000` (atau sesuai konfigurasi di `.env`).
