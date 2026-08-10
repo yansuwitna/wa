@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const svgCaptcha = require('svg-captcha');
 const { prisma } = require('./db');
-const { initializeSession, getQrCode, disconnectSession, getSession } = require('./whatsapp');
+const { initializeSession, getQrCode, disconnectSession, getSession, waEvents } = require('./whatsapp');
 const { getLogs } = require('./logger');
 
 const router = express.Router();
@@ -335,6 +335,26 @@ router.get('/user/messages', checkUserAuth, async (req, res) => {
   }
 });
 
+router.get('/user/group-events', checkUserAuth, (req, res) => {
+  const username = req.userAuth.username;
+  
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  
+  const listener = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+  
+  waEvents.on(`group-message-${username}`, listener);
+  
+  req.on('close', () => {
+    waEvents.off(`group-message-${username}`, listener);
+  });
+});
+
 // --- ADMIN ROUTES (Protected) ---
 
 router.get('/admin/stats', checkAuth, async (req, res) => {
@@ -597,7 +617,7 @@ router.get('/client/:username/qr/json', async (req, res) => {
 
 router.post('/api/send', async (req, res) => {
   try {
-    const { username, no_hp, isi, token, secret } = req.body;
+    const { username, no_hp, jid, isi, token, secret } = req.body;
 
     if (!username || !token || !secret) {
       return res.status(401).json({ error: 'Kombinasi username, token, dan secret salah' });
@@ -616,14 +636,19 @@ router.post('/api/send', async (req, res) => {
       return res.status(403).json({ error: 'Akun user dinonaktifkan' });
     }
 
-    // Normalisasi Nomor Handphone
-    let target_no = no_hp.replace(/\D/g, ''); // Hapus semua karakter non-angka
-    if (target_no.startsWith('0')) {
-        target_no = '62' + target_no.substring(1);
-    } else if (target_no.startsWith('8')) {
-        target_no = '62' + target_no;
-    } else if (target_no.startsWith('620')) {
-        target_no = '62' + target_no.substring(3);
+    let target_no = jid || no_hp;
+    if (jid) {
+        target_no = jid;
+    } else {
+        // Normalisasi Nomor Handphone
+        target_no = target_no.replace(/\D/g, ''); // Hapus semua karakter non-angka
+        if (target_no.startsWith('0')) {
+            target_no = '62' + target_no.substring(1);
+        } else if (target_no.startsWith('8')) {
+            target_no = '62' + target_no;
+        } else if (target_no.startsWith('620')) {
+            target_no = '62' + target_no.substring(3);
+        }
     }
 
     const sendAt = new Date();
@@ -640,6 +665,58 @@ router.post('/api/send', async (req, res) => {
 
     res.json({ 
         message: 'Message queued successfully', 
+        scheduled_for: sendAt,
+        data: {
+            id: message.id,
+            target: message.target_no,
+            status: message.status
+        }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint khusus untuk mengirim ke Group (JID)
+router.post('/api/send-group', async (req, res) => {
+  try {
+    const { username, jid, isi, token, secret } = req.body;
+
+    if (!username || !token || !secret) {
+      return res.status(401).json({ error: 'Kombinasi username, token, dan secret salah' });
+    }
+
+    if (!jid) {
+      return res.status(400).json({ error: 'Parameter jid wajib diisi untuk endpoint ini' });
+    }
+
+    // Cari user berdasarkan username
+    const user = await prisma.user.findUnique({ 
+        where: { username }
+    });
+    
+    if (!user || user.token !== token || user.secret !== secret) {
+      return res.status(401).json({ error: 'Kombinasi username, token, dan secret salah' });
+    }
+
+    if (user.aktif === 0) {
+      return res.status(403).json({ error: 'Akun user dinonaktifkan' });
+    }
+
+    const sendAt = new Date();
+
+    const message = await prisma.message.create({
+      data: {
+        userUsername: user.username,
+        target_no: jid,
+        message: isi,
+        send_at: sendAt,
+        status: 'PENDING'
+      }
+    });
+
+    res.json({ 
+        message: 'Group message queued successfully', 
         scheduled_for: sendAt,
         data: {
             id: message.id,

@@ -44,9 +44,9 @@ app.prepare().then(async () => {
       return handle(req, res, parsedUrl);
     });
 
-    server.listen(PORT, (err) => {
+    server.listen(PORT, '0.0.0.0', (err) => {
       if (err) throw err;
-      console.log(`> Server ready on http://localhost:${PORT}`);
+      console.log(`> Server ready on http://0.0.0.0:${PORT}`);
     });
   } catch (error) {
     console.error('Error starting server:', error);

@@ -23,6 +23,12 @@ export default function UserPage() {
   // Tes Pesan state
   const [testNoHp, setTestNoHp] = useState('');
   const [testIsiPesan, setTestIsiPesan] = useState('');
+
+  const [testJid, setTestJid] = useState('');
+  const [testIsiPesanJid, setTestIsiPesanJid] = useState('');
+  
+  const [showJidModal, setShowJidModal] = useState(false);
+  const [groupJids, setGroupJids] = useState([]);
   
   const checkAuth = async () => {
     try {
@@ -109,6 +115,26 @@ export default function UserPage() {
     };
   }, [currentTab, messagesCurrentPage, messagesStartDate, messagesEndDate, messagesData]);
 
+  useEffect(() => {
+    let eventSource;
+    if (showJidModal) {
+      eventSource = new EventSource('/user/group-events');
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setGroupJids(prev => {
+          if (prev.find(g => g.jid === data.jid)) return prev;
+          return [...prev, data];
+        });
+      };
+    }
+    
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [showJidModal]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!usernameInput || !passwordInput) return Swal.fire('Error', 'Username dan Password wajib diisi', 'error');
@@ -177,6 +203,43 @@ export default function UserPage() {
         Swal.fire('Sukses', 'Pesan berhasil dikirim', 'success');
         setTestNoHp('');
         setTestIsiPesan('');
+        fetchStats();
+      } else {
+        Swal.fire('Error', data.error || 'Gagal mengirim pesan', 'error');
+      }
+    } catch (err) {
+      Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+    }
+  };
+
+  const handleTestMessageJid = async (e) => {
+    e.preventDefault();
+    if (!testJid || !testIsiPesanJid) {
+      return Swal.fire('Error', 'JID dan Isi Pesan wajib diisi', 'error');
+    }
+    
+    if (user?.waStatus !== 'CONNECTED') {
+      return Swal.fire('Error', 'WhatsApp belum terkoneksi', 'error');
+    }
+
+    try {
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: user.username,
+          jid: testJid,
+          isi: testIsiPesanJid,
+          token: user.token,
+          secret: user.secret
+        })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        Swal.fire('Sukses', 'Pesan via JID berhasil dikirim', 'success');
+        setTestJid('');
+        setTestIsiPesanJid('');
         fetchStats();
       } else {
         Swal.fire('Error', data.error || 'Gagal mengirim pesan', 'error');
@@ -315,10 +378,22 @@ export default function UserPage() {
             Tes Pesan
           </button>
           <button 
+            onClick={() => { setCurrentTab('TES_JID'); setIsSidebarOpen(false); }} 
+            style={{ textAlign: 'left', padding: '12px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: currentTab === 'TES_JID' ? '#2563eb' : 'transparent', color: currentTab === 'TES_JID' ? '#fff' : '#cbd5e1', fontWeight: '500', transition: 'all 0.2s' }}
+          >
+            Tes Pesan JID
+          </button>
+          <button 
             onClick={() => { setCurrentTab('PETUNJUK'); setIsSidebarOpen(false); }} 
             style={{ textAlign: 'left', padding: '12px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: currentTab === 'PETUNJUK' ? '#2563eb' : 'transparent', color: currentTab === 'PETUNJUK' ? '#fff' : '#cbd5e1', fontWeight: '500', transition: 'all 0.2s' }}
           >
             Petunjuk API
+          </button>
+          <button 
+            onClick={() => { setShowJidModal(true); setIsSidebarOpen(false); }} 
+            style={{ textAlign: 'left', padding: '12px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: showJidModal ? '#2563eb' : 'transparent', color: showJidModal ? '#fff' : '#cbd5e1', fontWeight: '500', transition: 'all 0.2s' }}
+          >
+            JID GROUP
           </button>
         </nav>
 
@@ -333,7 +408,7 @@ export default function UserPage() {
         <header style={{ backgroundColor: '#fff', padding: '20px 32px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center' }}>
           <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
           <h2 style={{ margin: 0, fontSize: '18px', color: '#334155', fontWeight: '500' }}>
-            <span style={{ color: '#94a3b8' }}>{currentTab === 'DASHBOARD' ? 'Dashboard' : currentTab === 'MESSAGES' ? 'Pesan' : currentTab === 'TES' ? 'Tes Pesan' : 'Petunjuk API'} / </span> {user?.name || 'User'}
+            <span style={{ color: '#94a3b8' }}>{currentTab === 'DASHBOARD' ? 'Dashboard' : currentTab === 'MESSAGES' ? 'Pesan' : currentTab === 'TES' ? 'Tes Pesan' : currentTab === 'TES_JID' ? 'Tes Pesan JID' : 'Petunjuk API'} / </span> {user?.name || 'User'}
           </h2>
         </header>
 
@@ -545,6 +620,43 @@ export default function UserPage() {
             </div>
           )}
 
+          {currentTab === 'TES_JID' && (
+            <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <h2 style={{ margin: '0 0 24px 0', fontSize: '20px' }}>Pengujian Kirim Pesan via JID</h2>
+              <form onSubmit={handleTestMessageJid} style={{ maxWidth: '500px' }}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: '#64748b', fontSize: '14px' }}>Target JID</label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: 123456789@g.us atau 62812...@s.whatsapp.net" 
+                    value={testJid} 
+                    onChange={e => setTestJid(e.target.value)} 
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <small style={{ color: '#94a3b8', fontSize: '12px' }}>Dapatkan JID dari menu JID GROUP</small>
+                </div>
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: '#64748b', fontSize: '14px' }}>Isi Pesan</label>
+                  <textarea 
+                    placeholder="Tulis pesan pengujian Anda di sini..." 
+                    value={testIsiPesanJid} 
+                    onChange={e => setTestIsiPesanJid(e.target.value)} 
+                    rows="5"
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                  ></textarea>
+                </div>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '12px', fontSize: '16px', fontWeight: '600', backgroundColor: '#10b981', border: 'none' }}
+                  disabled={user?.waStatus !== 'CONNECTED'}
+                >
+                  {user?.waStatus === 'CONNECTED' ? 'Kirim Pesan via JID' : 'WhatsApp Belum Terkoneksi'}
+                </button>
+              </form>
+            </div>
+          )}
+
           {currentTab === 'PETUNJUK' && (
             <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ margin: '0 0 24px 0', fontSize: '20px' }}>Petunjuk Penggunaan API</h2>
@@ -552,8 +664,12 @@ export default function UserPage() {
                 <p>Anda dapat mengintegrasikan pengiriman pesan WhatsApp ke dalam aplikasi Anda dengan melakukan HTTP POST request ke endpoint API kami.</p>
                 
                 <h3 style={{ marginTop: '24px', fontSize: '16px', color: '#0f172a' }}>1. Endpoint URL</h3>
-                <code style={{ display: 'block', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', color: '#334155', marginBottom: '16px' }}>
+                <code style={{ display: 'block', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', color: '#334155', marginBottom: '8px' }}>
                   POST {window.location.origin}/api/send
+                </code>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>Atau gunakan endpoint khusus untuk JID/Grup:</p>
+                <code style={{ display: 'block', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', color: '#334155', marginBottom: '16px' }}>
+                  POST {window.location.origin}/api/send-group
                 </code>
                 
                 <h3 style={{ marginTop: '24px', fontSize: '16px', color: '#0f172a' }}>2. Parameter (Format JSON)</h3>
@@ -584,7 +700,12 @@ export default function UserPage() {
                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '12px' }}><code>no_hp</code></td>
                       <td style={{ padding: '12px' }}>String</td>
-                      <td style={{ padding: '12px' }}>Nomor WhatsApp tujuan (gunakan format kode negara misal: 62812xxx).</td>
+                      <td style={{ padding: '12px' }}>Nomor WhatsApp tujuan (gunakan format kode negara misal: 62812xxx). Dipakai untuk <code>/api/send</code>.</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '12px' }}><code>jid</code></td>
+                      <td style={{ padding: '12px' }}>String</td>
+                      <td style={{ padding: '12px' }}>JID tujuan atau Grup (misal: 123456789@g.us). Opsional untuk <code>/api/send</code>, Wajib untuk <code>/api/send-group</code>.</td>
                     </tr>
                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '12px' }}><code>isi</code></td>
@@ -595,7 +716,7 @@ export default function UserPage() {
                 </table>
                 
                 <h3 style={{ marginTop: '32px', fontSize: '16px', color: '#0f172a' }}>3. Contoh Implementasi</h3>
-                <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>cURL</h4>
+                <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>cURL (Kirim ke Nomor)</h4>
                 <pre style={{ backgroundColor: '#1e293b', color: '#f8fafc', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginBottom: '16px' }}>
 {`curl -X POST ${window.location.origin}/api/send \\
 -H "Content-Type: application/json" \\
@@ -608,11 +729,24 @@ export default function UserPage() {
 }'`}
                 </pre>
                 
+                <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>cURL (Kirim ke Grup / JID)</h4>
+                <pre style={{ backgroundColor: '#1e293b', color: '#f8fafc', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginBottom: '16px' }}>
+{`curl -X POST ${window.location.origin}/api/send-group \\
+-H "Content-Type: application/json" \\
+-d '{
+  "username": "${user?.username || 'USERNAME_ANDA'}",
+  "token": "${user?.token || 'TOKEN_ANDA'}",
+  "secret": "${user?.secret || 'SECRET_ANDA'}",
+  "jid": "12345678912345@g.us",
+  "isi": "Halo, ini pesan percobaan untuk Grup dari API!"
+}'`}
+                </pre>
+                
                 <h4 style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>PHP (cURL)</h4>
                 <pre style={{ backgroundColor: '#1e293b', color: '#f8fafc', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginBottom: '16px' }}>
 {`<?php
+// === CONTOH MENGIRIM KE NOMOR HP ===
 $curl = curl_init();
-
 $payload = json_encode(array(
   "username" => "${user?.username || 'USERNAME_ANDA'}",
   "token" => "${user?.token || 'TOKEN_ANDA'}",
@@ -631,14 +765,37 @@ curl_setopt_array($curl, array(
   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
   CURLOPT_CUSTOMREQUEST => 'POST',
   CURLOPT_POSTFIELDS => $payload,
-  CURLOPT_HTTPHEADER => array(
-    'Content-Type: application/json'
-  ),
+  CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
 ));
-
 $response = curl_exec($curl);
 curl_close($curl);
 echo $response;
+
+// === CONTOH MENGIRIM KE GRUP (JID) ===
+$curlGroup = curl_init();
+$payloadGroup = json_encode(array(
+  "username" => "${user?.username || 'USERNAME_ANDA'}",
+  "token" => "${user?.token || 'TOKEN_ANDA'}",
+  "secret" => "${user?.secret || 'SECRET_ANDA'}",
+  "jid" => "12345678912345@g.us",
+  "isi" => "Halo, ini pesan percobaan untuk Grup dari API!"
+));
+
+curl_setopt_array($curlGroup, array(
+  CURLOPT_URL => '${window.location.origin}/api/send-group',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => $payloadGroup,
+  CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+));
+$responseGroup = curl_exec($curlGroup);
+curl_close($curlGroup);
+echo $responseGroup;
 ?>`}
                 </pre>
 
@@ -669,6 +826,47 @@ echo $response;
           )}
         </div>
       </main>
+      
+      {showJidModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px' }}>Dapatkan JID Group</h2>
+              <button onClick={() => setShowJidModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px' }}>
+              Kirim pesan apa saja ke grup WhatsApp dari HP Anda. JID grup akan otomatis muncul di sini. (WhatsApp harus dalam status Terhubung).
+            </p>
+            
+            {groupJids.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                <p style={{ color: '#94a3b8', margin: 0 }}>Menunggu pesan grup masuk...</p>
+              </div>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {groupJids.map((g, i) => (
+                  <li key={i} style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '14px' }}>{g.name}</strong>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>{g.jid}</span>
+                    </div>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(g.jid); Swal.fire('Sukses', 'JID disalin!', 'success'); }}
+                      style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Salin
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

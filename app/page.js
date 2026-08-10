@@ -746,9 +746,13 @@ export default function AdminPage() {
             <div className="card">
               <h2 style={{ marginBottom: '16px' }}>Panduan Penggunaan API</h2>
               <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <p style={{ marginBottom: '8px' }}>Gunakan endpoint berikut untuk mengirim pesan via API:</p>
-                <code style={{ display: 'block', backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', marginBottom: '16px', wordWrap: 'break-word' }}>
+                <p style={{ marginBottom: '8px' }}>Gunakan endpoint berikut untuk mengirim pesan via API ke nomor HP:</p>
+                <code style={{ display: 'block', backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', marginBottom: '8px', wordWrap: 'break-word' }}>
                   POST {typeof window !== 'undefined' ? window.location.origin : ''}/api/send
+                </code>
+                <p style={{ marginBottom: '8px' }}>Atau gunakan endpoint khusus untuk mengirim ke Grup (JID):</p>
+                <code style={{ display: 'block', backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', marginBottom: '16px', wordWrap: 'break-word' }}>
+                  POST {typeof window !== 'undefined' ? window.location.origin : ''}/api/send-group
                 </code>
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Headers:</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', marginBottom: '16px', overflowX: 'auto' }}>
@@ -756,18 +760,29 @@ export default function AdminPage() {
                 </pre>
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Body (JSON):</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}>
-{`{
+{`// Untuk /api/send
+{
   "username": "USERNAME_MILIK_USER",
   "token": "TOKEN_MILIK_USER",
   "secret": "SECRET_MILIK_USER",
   "no_hp": "6281234567890",
   "isi": "Halo, ini pesan dari API!"
+}
+
+// Untuk /api/send-group
+{
+  "username": "USERNAME_MILIK_USER",
+  "token": "TOKEN_MILIK_USER",
+  "secret": "SECRET_MILIK_USER",
+  "jid": "123456789@g.us",
+  "isi": "Halo, ini pesan dari API untuk Grup!"
 }`}
                 </pre>
                 
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Contoh Penggunaan dengan cURL:</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#60a5fa', padding: '12px', borderRadius: '4px', marginBottom: '16px', overflowX: 'auto' }}>
-{`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/send \\
+{`# Mengirim ke Nomor HP
+curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/send \\
 -H "Content-Type: application/json" \\
 -d '{
   "username": "USERNAME_MILIK_USER",
@@ -775,14 +790,25 @@ export default function AdminPage() {
   "secret": "SECRET_MILIK_USER",
   "no_hp": "6281234567890",
   "isi": "Halo, ini pesan dari API!"
+}'
+
+# Mengirim ke Grup (JID)
+curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/send-group \\
+-H "Content-Type: application/json" \\
+-d '{
+  "username": "USERNAME_MILIK_USER",
+  "token": "TOKEN_MILIK_USER",
+  "secret": "SECRET_MILIK_USER",
+  "jid": "12345678912@g.us",
+  "isi": "Halo, ini pesan untuk Grup!"
 }'`}
                 </pre>
 
                 <p style={{ marginBottom: '8px', fontWeight: 'bold' }}>Contoh Penggunaan dengan PHP:</p>
                 <pre style={{ backgroundColor: '#1e293b', color: '#a78bfa', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}>
 {`<?php
+// === CONTOH MENGIRIM KE NOMOR HP ===
 $curl = curl_init();
-
 $payload = json_encode(array(
   "username" => "USERNAME_MILIK_USER",
   "token" => "TOKEN_MILIK_USER",
@@ -796,14 +822,32 @@ curl_setopt_array($curl, array(
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_POST => true,
   CURLOPT_POSTFIELDS => $payload,
-  CURLOPT_HTTPHEADER => array(
-    'Content-Type: application/json'
-  ),
+  CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
 ));
-
 $response = curl_exec($curl);
 curl_close($curl);
 echo $response;
+
+// === CONTOH MENGIRIM KE GRUP (JID) ===
+$curlGroup = curl_init();
+$payloadGroup = json_encode(array(
+  "username" => "USERNAME_MILIK_USER",
+  "token" => "TOKEN_MILIK_USER",
+  "secret": "SECRET_MILIK_USER",
+  "jid" => "12345678912@g.us",
+  "isi" => "Halo, ini pesan untuk Grup!"
+));
+
+curl_setopt_array($curlGroup, array(
+  CURLOPT_URL => '${typeof window !== 'undefined' ? window.location.origin : ''}/api/send-group',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_POST => true,
+  CURLOPT_POSTFIELDS => $payloadGroup,
+  CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+));
+$responseGroup = curl_exec($curlGroup);
+curl_close($curlGroup);
+echo $responseGroup;
 ?>`}
                 </pre>
 

@@ -4,6 +4,9 @@ const pino = require('pino');
 const fs = require('fs');
 const path = require('path');
 const { prisma } = require('./db');
+const { EventEmitter } = require('events');
+
+const waEvents = new EventEmitter();
 
 const sessions = new Map();
 const qrCodes = new Map();
@@ -67,6 +70,26 @@ const initializeSession = async (username) => {
       });
     }
   });
+
+  sock.ev.on('messages.upsert', async (m) => {
+    try {
+      const msg = m.messages[0];
+      if (m.type === 'notify' && msg.key.remoteJid && msg.key.remoteJid.endsWith('@g.us')) {
+        let groupName = 'Unknown Group';
+        try {
+          const metadata = await sock.groupMetadata(msg.key.remoteJid);
+          groupName = metadata.subject;
+        } catch(e) {}
+        
+        waEvents.emit(`group-message-${username}`, {
+          jid: msg.key.remoteJid,
+          name: groupName
+        });
+      }
+    } catch (err) {
+      console.error('Error handling messages.upsert', err);
+    }
+  });
 };
 
 const getSession = (username) => {
@@ -109,5 +132,6 @@ module.exports = {
   getSession,
   disconnectSession,
   getQrCode,
-  initAllSessions
+  initAllSessions,
+  waEvents
 };

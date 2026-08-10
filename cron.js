@@ -41,7 +41,7 @@ const startCron = () => {
         // Ensure client is ready and connected
         if (waClient && msg.user.waStatus === 'CONNECTED') {
           try {
-            const formattedNumber = msg.target_no.includes('@s.whatsapp.net') ? msg.target_no : `${msg.target_no}@s.whatsapp.net`;
+            const formattedNumber = msg.target_no.includes('@') ? msg.target_no : `${msg.target_no}@s.whatsapp.net`;
             
             await waClient.sendMessage(formattedNumber, { text: msg.message });
             await prisma.message.update({
