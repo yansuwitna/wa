@@ -342,7 +342,7 @@ export default function AdminPage() {
   const handleDeleteUser = async (username) => {
     const result = await Swal.fire({
       title: 'Hapus User?',
-      text: "User beserta seluruh client WA miliknya akan ikut terhapus!",
+      text: "User beserta seluruh client WA dan semua pesan miliknya akan ikut terhapus secara permanen!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Ya, Hapus!'
@@ -352,10 +352,16 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/admin/users/${username}`, { method: 'DELETE' });
       if (res.ok) {
+         Swal.fire('Terhapus!', 'User berhasil dihapus.', 'success');
          fetchUsers();
          fetchStats();
+      } else {
+        const data = await res.json();
+        Swal.fire('Error', data.error || 'Gagal menghapus user', 'error');
       }
-    } catch (err) {}
+    } catch (err) {
+      Swal.fire('Error', 'Gagal menghapus user', 'error');
+    }
   };
 
   const handleDisconnectWA = async (username) => {
@@ -727,9 +733,7 @@ export default function AdminPage() {
                                   <button className="btn btn-success" onClick={() => fetchUserMessages(u.username, u.name, 1, '', '')} style={{padding: '6px 12px', fontSize: '12px', backgroundColor: '#10b981', border: 'none'}}>Lihat Pesan</button>
                                   <button className="btn btn-primary" onClick={() => openEditUser(u)} style={{padding: '6px 12px', fontSize: '12px'}}>Ubah Data</button>
                                   <button className="btn btn-primary" onClick={() => handleResetAPI(u.username)} style={{padding: '6px 12px', fontSize: '12px', backgroundColor: '#f59e0b', border: 'none'}}>Reset Token & Secret</button>
-                                  {(!u._count || u._count.messages === 0) && (
-                                    <button className="btn btn-danger" onClick={() => handleDeleteUser(u.username)} style={{padding: '6px 12px', fontSize: '12px', backgroundColor: '#ef4444', border: 'none', color: '#fff'}}>Hapus User</button>
-                                  )}
+                                  <button className="btn btn-danger" onClick={() => handleDeleteUser(u.username)} style={{padding: '6px 12px', fontSize: '12px', backgroundColor: '#ef4444', border: 'none', color: '#fff'}}>Hapus User</button>
                                 </div>
                               </td>
                             </tr>
