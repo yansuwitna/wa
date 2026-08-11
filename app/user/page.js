@@ -277,12 +277,17 @@ export default function UserPage() {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch('/user/wa', { method: 'DELETE' });
+      const res = await fetch('/user/client', { method: 'DELETE' });
       if (res.ok) {
         Swal.fire('Sukses', 'Koneksi WA telah diputus.', 'success');
         fetchUser();
+      } else {
+        const data = await res.json();
+        Swal.fire('Error', data.error || 'Gagal memutus koneksi WA', 'error');
       }
-    } catch (err) {}
+    } catch (err) {
+      Swal.fire('Error', 'Gagal memutus koneksi WA', 'error');
+    }
   };
 
   const handleScanQR = async () => {

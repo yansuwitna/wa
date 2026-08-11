@@ -376,8 +376,13 @@ export default function AdminPage() {
          Swal.fire('Terhapus!', 'Koneksi WA telah diputus.', 'success');
          fetchUsers();
          fetchStats();
+      } else {
+        const data = await res.json();
+        Swal.fire('Error', data.error || 'Gagal memutus koneksi WA', 'error');
       }
-    } catch (err) {}
+    } catch (err) {
+      Swal.fire('Error', 'Gagal memutus koneksi WA', 'error');
+    }
   };
 
   const handleScanQR = async (username) => {
